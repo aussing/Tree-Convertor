@@ -17,24 +17,26 @@ NumSimTreeFiles = header.__getitem__('NumFiles')
 SnapNum = tree_data['TreeHalos/SnapNum']
 FileNr = header.__getitem__('NumFiles') ## Only have outputs w/ 1 tree file atm, not sure where parameter for file number will be stored if at all
 SubhaloIndex = tree_data['TreeHalos/TreeID']
-SubHalfMass = tree_data['####']  
+# SubHalfMass = tree_data['####']  
 
 ## Merger tree pointers
 Descendant = tree_data['TreeHalos/TreeDescendant']
 FirstProgenitor = tree_data['TreeHalos/TreeFirstProgenitor']
 NextProgenitor = tree_data['TreeHalos/TreeNextProgenitor']
-FirstHaloInFOFgroup = tree_data['TreeHalos/FirstHaloInFOFGroup']
-NextHaloInFOFgroup = tree_data['TreeHalos/NextHaloInFOFGroup']
+FirstHaloInFOFgroup = tree_data['TreeHalos/TreeFirstHaloInFOFgroup']
+NextHaloInFOFgroup = tree_data['TreeHalos/TreeNextHaloInFOFgroup']
+
 
 
 ##Sub halo Properties
 
-Len = tree_data['TreeHalos/Len']
+Len = tree_data['TreeHalos/SubhaloLen']
 Mvir = tree_data['TreeHalos/Group_M_Crit200']
 Pos = tree_data['TreeHalos/SubhaloPos']
 Vel = tree_data['TreeHalos/SubhaloVel']
 VelDisp = tree_data['TreeHalos/SubhaloVelDisp']
 Vmax = tree_data['TreeHalos/SubhaloVmax']
 Spin = tree_data['TreeHalos/SubhaloSpin']
-MostBoundID = tree_data['TreeHalos/SubhaloIDMostBound']
+MostBoundID = tree_data['TreeHalos/SubhaloIDMostbound']
 
+print('done')
