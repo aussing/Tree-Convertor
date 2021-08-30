@@ -54,14 +54,21 @@ print('finished reading variables \n')
 print('Writing to L_Halo binary file \n')
 
 ## Combine to make things more readable
-HeaderParams = np.array([N_Trees,tot_NHalos,*TreeLen])#,NumSimTreeFiles], dtype=int)
-print(HeaderParams)
-# MergerTreeData = np.array([*Descendant,*FirstProgenitor,*NextProgenitor,*FirstHaloInFOFgroup,*NextHaloInFOFgroup], dtype=int)
-# SubHaloData = np.array([*SubLen,*Mvir,*Pos,*Vel,*VelDisp,*Vmax,*Spin])
-# PositionInTree = np.array([*SnapNum, FileNr, *SubhaloIndex], dtype=int) 
+HeaderParams = np.array([N_Trees,tot_NHalos,*TreeLen], dtype=np.int32)
+MergerTreeData = np.array([*Descendant,*FirstProgenitor,*NextProgenitor,*FirstHaloInFOFgroup,*NextHaloInFOFgroup, *SubLen], dtype = np.int32)
 
-All = np.array([HeaderParams], dtype=np.int32)#, *MergerTreeData,*SubHaloData,*MostBoundID,*PositionInTree,*SubHalfMass]) 
-# print("All Shape: ", All.shape)pwd
-with open('/Users/101125182/Documents/2021/data/L_halo_tree','wb+') as f:
-    f.write(All)
+Pos_stack = np.concatenate((Pos[:,0],Pos[:,1],Pos[:,2]), axis=None)
+Vel_stack = np.concatenate((Vel[:,0],Vel[:,1],Vel[:,2]), axis=None)
+Spin_stack = np.concatenate((Spin[:,0],Spin[:,1],Spin[:,2]), axis=None)
+
+SubHaloData = np.concatenate([Mvir,Pos_stack,Vel_stack,VelDisp,Vmax,Spin_stack],dtype=float, axis=None)
+M_Bound_ID = np.array([MostBoundID],dtype=c_ll)
+PositionInTree = np.array([*SnapNum, FileNr, *SubhaloIndex, *SubHalfMass], dtype=int)
+
+with open('/Users/101125182/Documents/2021/code/LHaloTreeReader/L_halo_tree','wb+') as f:
+    f.write(HeaderParams)
+    f.write(MergerTreeData)
+    f.write(SubHaloData)
+    f.write(M_Bound_ID)
+    f.write(PositionInTree)
 print("done")
