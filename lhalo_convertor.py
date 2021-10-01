@@ -1,11 +1,7 @@
 import h5py
 import numpy as np
 from ctypes import c_longlong as c_ll
-import sys
-# import line_profiler
 
-## Set path to data -- update path can be input
-# @profile
 def read_trees(file_path):
     ## define data structure of L-Halo tree
     tree_structure=[
@@ -16,7 +12,7 @@ def read_trees(file_path):
     ('NextHaloInFOFgroup', np.int32),
     ('SubLen', np.int32),
     ('M_Mean200', np.float32), # Not used in SAGE, can be filled with dummy values
-    ('Mvir', np.float32), ##M_crit_200
+    ('Mvir', np.float32), ##M_crit_200 in Gadget output
     ('M_tophat', np.float32), # Not used in SAGE, can be filled with dummy values
     ('Pos', (np.float32,3)),
     ('Vel', (np.float32,3)),
@@ -29,19 +25,19 @@ def read_trees(file_path):
     ('SubhaloIndex', np.int32),
     ('SubHalfMass', np.float32)
     ]
+    ## turn data structure into data type
     tree_structure=np.array(tree_structure,dtype=object)
     names = tree_structure[:,0]
     formats = tree_structure[:,1]
     tree_dtype = np.dtype({'names':names, 'formats':formats}, align=True) 
-    print("data type item size = ",tree_dtype.itemsize)
-    ## turn data structure into data type
+    # print("data type item size = ",tree_dtype.itemsize)
 
     tree_data = h5py.File(file_path, 'r')
     print("\nStart reading data from {file_path}\n")
     ## Header Properties
     header = tree_data.require_group('Header').attrs
     N_Trees = np.int32(header.__getitem__('Ntrees_ThisFile'))
-    print(f"N_trees = {N_Trees} \n")
+    print(f"N_trees = {N_Trees}")
     tot_NHalos = np.int32(header.__getitem__('Nhalos_ThisFile'))
     print(f"tot_NHalos = {tot_NHalos} \n")
     NumSimTreeFiles = header.__getitem__('NumFiles')
@@ -100,8 +96,8 @@ def read_trees(file_path):
     return (N_Trees,tot_NHalos,TreeLen,tree_block)
 
 if __name__ == "__main__":
-    input_filename = "/Users/101125182/Documents/2021/data/mini-millennium/treedata/trees.hdf5"
-    output_filename = "/Users/101125182/Documents/2021/data/mini-millennium/Converted/L_halo_tree.0.test"
+    input_filename = "/path/to/data/trees.hdf5"
+    output_filename = "/path/to/output/folder/L_halo_tree.0"
 
     N_trees,tot_NHalos,TreeLen,l_halo_structure = read_trees(input_filename)
     with open(output_filename,'wb') as f:
@@ -109,5 +105,4 @@ if __name__ == "__main__":
         f.write(tot_NHalos)
         f.write(TreeLen)
         f.write(l_halo_structure)
-
-print(f"Data written to {output_filename} \n")
+    print(f"Data written to {output_filename} \n")
