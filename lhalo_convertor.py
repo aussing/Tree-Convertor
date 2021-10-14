@@ -108,8 +108,8 @@ def convert_to_lhalo(input_filename,output_filename):
 
 if __name__ == "__main__":
     start_time =time.time()
-    input_filename = "/Users/101125182/Documents/data/mini-millennium/treedata/trees.hdf5"
-    output_filename = "/Users/101125182/Documents/data/mini-millennium/Converted/L_halo_tree.0.test"
+    input_filename = "/path/to/data/trees.hdf5"
+    output_filename = "path/to/data/L_halo_tree.0"
     
     print(f"\nStart reading data from {input_filename}\n") 
     convert_to_lhalo(input_filename,output_filename)
