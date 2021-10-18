@@ -98,24 +98,23 @@ def read_tree_structure(tree_data,tot_NHalos,n):
         SubHalfMass[this_halo] )
     return (tree_block)
 
-def convert_to_lhalo(file,input_data_directory,i):
+def convert_to_lhalo(file,input_data_directory,output_data_directory,i):
     tree_data = h5py.File(file, 'r')
     N_trees,tot_NHalos,TreeLen = read_header_props(tree_data)
     
-    # When Gadget-4 outputs >1 treefiles the 6th element in the output treefiles is the n-th file associated with the simulation.
+    # When Gadget-4 outputs >1 treefiles the 6th element in the output treefile name is the n-th file associated with the simulation.
     # ie. If there are 3 output files they'll be named trees.0.hdf5, trees.1.hdf5, & trees.2.hdf5
     # If there is only 1 output tree file it'll be named trees.hdf5, and the 6th element will be the "h" from "hdf5". In this case 
-    # I've set it to 0 for SAGE input simplicity
-    n = (i[6]) 
+    # I've set it to 0 for SAGE input simplicity 
+    n = i[6] 
     if n=="h": 
         n = "0"
 
     l_halo_structure = read_tree_structure(tree_data,tot_NHalos,n)
 
-    output_path = input_data_directory+"converted/"         # Places the converted files into a "converted/" subdirectory
+    # output_path = input_data_directory+"converted/"         # Places the converted files into a "converted/" subdirectory
     output_filename = "l_halo_tree."+n
-    final_output = output_path+output_filename
-    print(f"output file name = {final_output}")
+    final_output = output_data_directory+"/"+output_filename
     with open(final_output,'wb') as f:
         f.write(N_trees)
         f.write(tot_NHalos)
@@ -124,25 +123,30 @@ def convert_to_lhalo(file,input_data_directory,i):
     print(f"Finished converting {i} into {output_filename}")
 
 
-if __name__ == "__main__":
-    start_time =time.time()
-
-    input_data_directory = sys.argv[1]                                               # Gets the location of the Gadget-4 output files
-    Path(input_data_directory+"converted/").mkdir(parents=True, exist_ok=True)       # Creates the "converted/" DIR if it doesn't already exist
-
-    print(f"\nData location = {input_data_directory}")
-    print("====================================================================\n")
-
-    # Loops over all the files that end in HDF5 in the specified directory -> only reads the HDF5 Gadget-4 output
+def run_all(input_data_directory,output_data_directory):
+    # Loops over all ".hdf5" files in the input directory
     for i in [ i for i in os.listdir(input_data_directory) if i.endswith(".hdf5")]:
         file_start_time =time.time()
         print(f"file being converted = {i}")
 
         file = input_data_directory+"/"+i
-        convert_to_lhalo(file,input_data_directory,i)
+        convert_to_lhalo(file,input_data_directory,output_data_directory,i)
 
         file_end_time = time.time()
         print(f"File time taken = {np.round((file_end_time-file_start_time),decimals=2)} seconds\n")
         print("====================================================================\n")
+
+
+if __name__ == "__main__":
+    start_time =time.time()
+    input_data_directory = sys.argv[1]          # Gets the location of the Gadget-4 output files
+    output_data_directory = sys.argv[2]         # Gets the location of the output converted files
+                            
+    print(f"\nInput data location = {input_data_directory}")
+    print(f"Output data location = {output_data_directory}")
+    print("====================================================================\n")
+    
+    run_all(input_data_directory,output_data_directory)
+
     end_time = time.time()
     print(f"Total time taken = {np.round((end_time-start_time),decimals=2)} seconds\n")
