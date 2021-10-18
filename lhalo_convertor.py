@@ -140,7 +140,9 @@ def run_all(input_data_directory,output_data_directory):
 if __name__ == "__main__":
     start_time =time.time()
     input_data_directory = sys.argv[1]          # Gets the location of the Gadget-4 output files
+    # input_data_directory = "/path/to/data"          # Gets the location of the Gadget-4 output files
     output_data_directory = sys.argv[2]         # Gets the location of the output converted files
+    # output_data_directory = "/path/to/output"        # Gets the location of the output converted files
                             
     print(f"\nInput data location = {input_data_directory}")
     print(f"Output data location = {output_data_directory}")
