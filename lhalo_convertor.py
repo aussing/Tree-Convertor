@@ -1,9 +1,10 @@
 from unicodedata import decimal
+import time, sys, os
 import h5py
 import numpy as np
+from pathlib import Path
 from ctypes import c_longlong as c_ll
-import time
-# import sys
+
 
 def get_tree_dtype():       # Define the lhalo tree data structure
     tree_structure=[
@@ -41,12 +42,12 @@ def read_header_props(tree_data):       # Read out the header properties to be w
     tot_NHalos = tree_data['Header'].attrs['Nhalos_ThisFile']
     # NumSimTreeFiles = tree_data['Header'].attrs['NumFiles']
     TreeLen = np.array(tree_data['TreeTable/Length'],dtype=np.int32)
-    print(f"N_trees = {N_Trees}")
-    print(f"tot_NHalos = {tot_NHalos}\n")
+    print(f"Total trees in this file = {N_Trees}")
+    print(f"Total halos in this file = {tot_NHalos}\n")
     return (N_Trees, tot_NHalos, TreeLen)
 
 
-def read_tree_structure(tree_data,tot_NHalos):
+def read_tree_structure(tree_data,tot_NHalos,n):
     ## Tree properties
     Descendant = np.array(tree_data['TreeHalos/TreeDescendant'])
     FirstProgenitor = np.array(tree_data['TreeHalos/TreeFirstProgenitor'])
@@ -55,9 +56,9 @@ def read_tree_structure(tree_data,tot_NHalos):
     NextHaloInFOFgroup = np.array(tree_data['TreeHalos/TreeNextHaloInFOFgroup'])
     ##Subhalo Properties
     SubLen = np.array(tree_data['TreeHalos/SubhaloLen'])
-    M_Mean200 = np.array(tree_data['TreeHalos/Group_M_Crit200']) # Not used in SAGE, dummy values
-    Mvir = np.array(tree_data['TreeHalos/Group_M_Crit200']) # Important mass input value
-    M_tophat = np.array(tree_data['TreeHalos/Group_M_Crit200']) # Not used in SAGE, dummy values
+    M_Mean200 = np.array(tree_data['TreeHalos/Group_M_Crit200'])    # Not used in SAGE, dummy values
+    Mvir = np.array(tree_data['TreeHalos/Group_M_Crit200'])         # Important mass input value
+    M_tophat = np.array(tree_data['TreeHalos/Group_M_Crit200'])     # Not used in SAGE, dummy values
     Pos = np.array(tree_data['TreeHalos/SubhaloPos'])
     Vel = np.array(tree_data['TreeHalos/SubhaloVel'])
     VelDisp = np.array(tree_data['TreeHalos/SubhaloVelDisp'])
@@ -65,14 +66,15 @@ def read_tree_structure(tree_data,tot_NHalos):
     Spin = np.array(tree_data['TreeHalos/SubhaloSpin'])
     MostBoundID = np.array(tree_data['TreeHalos/SubhaloIDMostbound'])
     SnapNum = np.array(tree_data['TreeHalos/SnapNum'])
-    FileNr = tree_data['Header'].attrs['NumFiles']
-    ## Only have 1 tree file, conversion on file by file
+    # File Number read into sage -> The file number "n" is defined below from the file name
+    # FileNr = tree_data['Header'].attrs['NumFiles'] ## This gives the total number of files
+    FileNr = n
+
     SubhaloIndex = np.array(tree_data['TreeHalos/TreeID'])
     SubHalfMass = np.array(tree_data['TreeHalos/SubhaloHalfmassRad'])
 
     tree_dtype = get_tree_dtype()
     tree_block = np.empty(tot_NHalos, dtype=tree_dtype)
-    print(f'Started reading trees into lhalo structure \n')
     for this_halo in range(tot_NHalos):
         tree_block[this_halo]= (
         Descendant[this_halo],
@@ -91,28 +93,62 @@ def read_tree_structure(tree_data,tot_NHalos):
         Spin[this_halo],
         MostBoundID[this_halo],
         SnapNum[this_halo],
-        FileNr, ## FileNr[this halo], FileNr is a single int from the gadget tree header
+        FileNr,
         SubhaloIndex[this_halo],
         SubHalfMass[this_halo] )
     return (tree_block)
 
-def convert_to_lhalo(input_filename,output_filename):
-    tree_data = h5py.File(input_filename, 'r')
+def convert_to_lhalo(file,input_data_directory,output_data_directory,i):
+    tree_data = h5py.File(file, 'r')
     N_trees,tot_NHalos,TreeLen = read_header_props(tree_data)
-    l_halo_structure = read_tree_structure(tree_data,tot_NHalos)
-    with open(output_filename,'wb') as f:
+    
+    # When Gadget-4 outputs >1 treefiles the 6th element in the output treefile name is the n-th file associated with the simulation.
+    # ie. If there are 3 output files they'll be named trees.0.hdf5, trees.1.hdf5, & trees.2.hdf5
+    # If there is only 1 output tree file it'll be named trees.hdf5, and the 6th element will be the "h" from "hdf5". In this case 
+    # I've set it to 0 for SAGE input simplicity 
+    n = i[6] 
+    if n=="h": 
+        n = "0"
+
+    l_halo_structure = read_tree_structure(tree_data,tot_NHalos,n)
+
+    # output_path = input_data_directory+"converted/"         # Places the converted files into a "converted/" subdirectory
+    output_filename = "l_halo_tree."+n
+    final_output = output_data_directory+"/"+output_filename
+    with open(final_output,'wb') as f:
         f.write(N_trees)
         f.write(tot_NHalos)
         f.write(TreeLen)
         f.write(l_halo_structure)
+    print(f"Finished converting {i} into {output_filename}")
+
+
+def run_all(input_data_directory,output_data_directory):
+    # Loops over all ".hdf5" files in the input directory
+    for i in [ i for i in os.listdir(input_data_directory) if i.endswith(".hdf5")]:
+        file_start_time =time.time()
+        print(f"file being converted = {i}")
+
+        file = input_data_directory+"/"+i
+        convert_to_lhalo(file,input_data_directory,output_data_directory,i)
+
+        file_end_time = time.time()
+        print(f"File time taken = {np.round((file_end_time-file_start_time),decimals=2)} seconds\n")
+        print("====================================================================\n")
+
 
 if __name__ == "__main__":
     start_time =time.time()
-    input_filename = "/path/to/data/trees.hdf5"
-    output_filename = "path/to/data/L_halo_tree.0"
+    input_data_directory = sys.argv[1]          # Gets the location of the Gadget-4 output files
+    # input_data_directory = "/path/to/data"          # Gets the location of the Gadget-4 output files
+    output_data_directory = sys.argv[2]         # Gets the location of the output converted files
+    # output_data_directory = "/path/to/output"        # Gets the location of the output converted files
+                            
+    print(f"\nInput data location = {input_data_directory}")
+    print(f"Output data location = {output_data_directory}")
+    print("====================================================================\n")
     
-    print(f"\nStart reading data from {input_filename}\n") 
-    convert_to_lhalo(input_filename,output_filename)
-    print(f"Converted {input_filename} and wrote to {output_filename}")
+    run_all(input_data_directory,output_data_directory)
+
     end_time = time.time()
-    print(f"Time taken = {np.round((end_time-start_time),decimals=2)} seconds\n")
+    print(f"Total time taken = {np.round((end_time-start_time),decimals=2)} seconds\n")
