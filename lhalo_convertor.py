@@ -38,8 +38,8 @@ def get_tree_dtype():       # Define the lhalo tree data structure
     return lhalo_dtype
 
 def read_header_props(tree_data):       # Read out the header properties to be written at the beginning of the SAGE input file
-    N_Trees = tree_data['Header'].attrs['Ntrees_ThisFile']
-    tot_NHalos = tree_data['Header'].attrs['Nhalos_ThisFile']
+    N_Trees = np.int32(tree_data['Header'].attrs['Ntrees_ThisFile'])
+    tot_NHalos = np.int32(tree_data['Header'].attrs['Nhalos_ThisFile'])
     # NumSimTreeFiles = tree_data['Header'].attrs['NumFiles']
     TreeLen = np.array(tree_data['TreeTable/Length'],dtype=np.int32)
     print(f"Total trees in this file = {N_Trees}")
@@ -98,7 +98,7 @@ def read_tree_structure(tree_data,tot_NHalos,n):
         SubHalfMass[this_halo] )
     return (tree_block)
 
-def convert_to_lhalo(file,input_data_directory,output_data_directory,i):
+def convert_to_lhalo(file,output_data_directory,i):
     tree_data = h5py.File(file, 'r')
     N_trees,tot_NHalos,TreeLen = read_header_props(tree_data)
     
@@ -112,7 +112,6 @@ def convert_to_lhalo(file,input_data_directory,output_data_directory,i):
 
     l_halo_structure = read_tree_structure(tree_data,tot_NHalos,n)
 
-    # output_path = input_data_directory+"converted/"         # Places the converted files into a "converted/" subdirectory
     output_filename = "l_halo_tree."+n
     final_output = output_data_directory+"/"+output_filename
     with open(final_output,'wb') as f:
@@ -124,8 +123,8 @@ def convert_to_lhalo(file,input_data_directory,output_data_directory,i):
 
 
 def run_all(input_data_directory,output_data_directory):
-    # Loops over all ".hdf5" files in the input directory
-    for i in [ i for i in os.listdir(input_data_directory) if i.endswith(".hdf5")]:
+    # Loops over all "trees." files in the input directory
+    for i in [ i for i in os.listdir(input_data_directory) if i.startswith("trees.")]:
         file_start_time =time.time()
         print(f"file being converted = {i}")
 
@@ -139,10 +138,10 @@ def run_all(input_data_directory,output_data_directory):
 
 if __name__ == "__main__":
     start_time =time.time()
-    input_data_directory = sys.argv[1]          # Gets the location of the Gadget-4 output files
-    # input_data_directory = "/path/to/data"          # Gets the location of the Gadget-4 output files
-    output_data_directory = sys.argv[2]         # Gets the location of the output converted files
-    # output_data_directory = "/path/to/output"        # Gets the location of the output converted files
+    input_data_directory = sys.argv[1]          # Gets the location of the Gadget-4 mergertree files
+    # input_data_directory = "/path/to/data"          # allows for hardcoding of Gadget-4 mergertree files
+    output_data_directory = sys.argv[2]         # Gets the location of the converted filesd
+    # output_data_directory = "/path/to/output"        # allows for hardcoding of converted files
                             
     print(f"\nInput data location = {input_data_directory}")
     print(f"Output data location = {output_data_directory}")
