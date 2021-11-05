@@ -5,7 +5,6 @@ import numpy as np
 from pathlib import Path
 from ctypes import c_longlong as c_ll
 
-
 def get_tree_dtype():         # Define the lhalo tree data structure
     tree_structure=[
     ('Descendant', np.int32),
@@ -64,8 +63,8 @@ def read_tree_structure(tree_data,tot_NHalos,file_number,start_halo):
     Spin = np.array(tree_data['TreeHalos/SubhaloSpin'])
     MostBoundID = np.array(tree_data['TreeHalos/SubhaloIDMostbound'])
     SnapNum = np.array(tree_data['TreeHalos/SnapNum'])
-    # File Number read into sage -> "file_number" is defined below from the file name
-    # FileNr = tree_data['Header'].attrs['NumFiles'] ## This gives the total number of tree files for the simulation
+    # File Number read into sage -> "file_number" is defined below from the file name. The file_number in the gadget-4 header
+    # gives the total number of tree files for the simulation
     FileNr = file_number
     SubhaloIndex = np.array(tree_data['TreeHalos/TreeID'])
     SubHalfMass = np.array(tree_data['TreeHalos/SubhaloHalfmassRad'])
@@ -94,7 +93,7 @@ def read_tree_structure(tree_data,tot_NHalos,file_number,start_halo):
         FileNr,
         SubhaloIndex[read_halo],
         SubHalfMass[read_halo] )
-    return (tree_block)
+    return tree_block
 
 def run_all(input_data_directory,output_data_directory):
     # Loops over all "trees." files in the input directory
@@ -112,23 +111,21 @@ def run_all(input_data_directory,output_data_directory):
         if file_number=="h": 
             file_number = "0"
 
-        output_filename = "l_halo_tree."+file_number
-        final_output = output_data_directory+"/"+output_filename
-
         N_Trees, tot_NHalos, TreeLen, NumSimTreeFiles = read_header_props(tree_data)
-        
-        print(f"Total trees in this file = {N_Trees}, Total halos in this file = {tot_NHalos}")
-        print(f"sum tree length = {np.sum(TreeLen)}")
-        # print(f"length tree length = {len(TreeLen)}\n")
-        
+        # Start_halo determines the offset to start reading the tree files, for file 0 (or if there's only 1 tree file) start_halo=0, but for subsequent files
+        # it makes sure halos from the final tree in the previous file aren't written to the beginning of the first tree in the current file
+        start_halo = np.where([tree_data['TreeTable/TreeID'][0]==tree_data['TreeHalos/TreeID']])[1][0]
+        print(f"Total trees in this file = {N_Trees}, Total halos in this file = {tot_NHalos}\n")
         if NumSimTreeFiles == 1:
             l_halo_structure = read_tree_structure(tree_data,tot_NHalos,file_number,start_halo)
 
         elif NumSimTreeFiles > 1 :
-            start_halo = np.where([tree_data['TreeTable/TreeID'][0]==tree_data['TreeHalos/TreeID']])[1][0]
             l_halo_structure = read_tree_structure(tree_data,tot_NHalos,file_number,start_halo)
+            # The sum of TreeLen gives the amount of halos for all the trees that begin in any given file, if it's larger than all the halos minus the starting offset
+            # it means there are halos for the final tree in the next file, so we need to open the next file and read all the halos associated with the final tree in 
+            # the original file
             if np.sum(TreeLen) > (tot_NHalos-start_halo):
-                append_file_name = list(file_name)
+                append_file_name = list(file_name) 
                 append_file_name[6] = str(int(file_number)+1)
                 append_file_name="".join(append_file_name)
                 append_file = input_data_directory+"/"+append_file_name
@@ -137,10 +134,11 @@ def run_all(input_data_directory,output_data_directory):
 
                 append_l_halo_structure = read_tree_structure(append_tree_data,append_n_halos,file_number,0)
                 l_halo_structure = np.concatenate((l_halo_structure,append_l_halo_structure))
-                tot_NHalos = np.int32(len(l_halo_structure))
-        
-        print(f"Total trees written out to file {file_number} = {N_Trees}")
-        print(f"All halos for trees in the file {file_number} = {len(l_halo_structure)}")
+            tot_NHalos = np.int32(len(l_halo_structure)) # redefine total_NHalos to include all the halos within that file
+        print(f"Total trees written to file {file_number} = {N_Trees}")
+        print(f"Total halos written to file {file_number} = {tot_NHalos}")
+        output_filename = "l_halo_tree."+file_number
+        final_output = output_data_directory+"/"+output_filename
         with open(final_output,'wb') as f:
             f.write(N_Trees)
             f.write(tot_NHalos)
@@ -151,7 +149,6 @@ def run_all(input_data_directory,output_data_directory):
         print(f"Finished converting {file_name} into {output_filename}")
         print(f"File time taken = {np.round((file_end_time-file_start_time),decimals=2)} seconds\n")
         print("====================================================================\n")
-        
 
 if __name__ == "__main__":
     start_time =time.time()
