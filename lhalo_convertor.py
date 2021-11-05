@@ -3,7 +3,6 @@ import time, sys, os
 import h5py
 import numpy as np
 from pathlib import Path
-from ctypes import c_longlong as c_ll
 
 def get_tree_dtype():         # Define the lhalo tree data structure
     tree_structure=[
@@ -24,7 +23,7 @@ def get_tree_dtype():         # Define the lhalo tree data structure
     ('VelDisp', np.float32),
     ('Vmax', np.float32),
     ('Spin', (np.float32,3)),
-    ('MostBoundID', c_ll),
+    ('MostBoundID', np.int64),
     ('SnapNum', np.int32),
     ('FileNr', np.int32),
     ('SubhaloIndex', np.int32),
